@@ -1,0 +1,4738 @@
+{
+  "name": "Lead-to-Revenue Orchestrator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "intake-form",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -7792,
+        -960
+      ],
+      "id": "720b5b2a-4d23-4ec3-a417-ef7a9d01948d",
+      "name": "Webhook - Intake Form",
+      "webhookId": "b80c21d8-9e8c-445f-8373-3b8c31ccf643"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9acaeb03-3457-49e3-a2a4-556c6b65d4cd",
+              "name": "idempotency_key",
+              "value": "={{ $json.body.phone_number||$json.body.phone }}_{{ $json.body.message }}",
+              "type": "string"
+            },
+            {
+              "id": "0f12d203-2a11-46af-88c8-94a28a416e74",
+              "name": "source",
+              "value": "web_form",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -7568,
+        -960
+      ],
+      "id": "970c6035-c023-4844-b8bb-aa49e9bdd72a",
+      "name": "Build Idempotency Key"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select * from idempotency_keys where idempotency_key = $1;",
+        "options": {
+          "queryReplacement": "={{ $json.idempotency_key }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -7344,
+        -960
+      ],
+      "id": "49955037-5087-46c4-a1f0-c70f84719691",
+      "name": "Check Idempotency Key",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b9cfa7fc-43d1-4b56-b1d1-bc46fe728448",
+              "leftValue": "={{ Object.keys($json).length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -7824,
+        -656
+      ],
+      "id": "758ccc6c-356b-4b52-ad9a-970155efe078",
+      "name": "IF - Is New Event"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "idempotency_keys",
+          "mode": "list",
+          "cachedResultName": "idempotency_keys"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "duplicate_count": 0,
+            "idempotency_key": "={{ $('Build Idempotency Key').item.json.idempotency_key }}",
+            "source": "={{ $('Build Idempotency Key').item.json.source }}",
+            "first_seen_at": "={{ $now }}",
+            "last_seen_at": "={{ $now }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "idempotency_key",
+              "displayName": "idempotency_key",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "first_seen_at",
+              "displayName": "first_seen_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_seen_at",
+              "displayName": "last_seen_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "duplicate_count",
+              "displayName": "duplicate_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "response_payload",
+              "displayName": "response_payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "expires_at",
+              "displayName": "expires_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -7584,
+        -704
+      ],
+      "id": "af139887-9034-4d3b-8008-233174f5452f",
+      "name": "Insert Idempotency Key",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "idempotency_keys",
+          "mode": "list",
+          "cachedResultName": "idempotency_keys"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "duplicate_count": "={{ $json.duplicate_count + 1}}",
+            "last_seen_at": "={{ $now }}",
+            "idempotency_key": "={{ $json.idempotency_key }}"
+          },
+          "matchingColumns": [
+            "idempotency_key"
+          ],
+          "schema": [
+            {
+              "id": "idempotency_key",
+              "displayName": "idempotency_key",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "first_seen_at",
+              "displayName": "first_seen_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_seen_at",
+              "displayName": "last_seen_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "duplicate_count",
+              "displayName": "duplicate_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "response_payload",
+              "displayName": "response_payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "expires_at",
+              "displayName": "expires_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -7616,
+        -528
+      ],
+      "id": "03da4010-f728-48b5-b932-9391cbca63b7",
+      "name": "Update Duplicate Count",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-5.6-luna\",\n  \"response_format\": { \"type\": \"json_object\" },\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a lead-intake assistant for a home services company such as HVAC, roofing, or plumbing. Read the raw customer message and extract structured information. Respond with ONLY valid JSON, no other text, no markdown formatting. Include exactly these fields: first_name, last_name, phone_number, service_type(AC repair, furnace repair, or roof replacement), property_type (residential or commercial), zip_code, city, state (two-letter abbreviation), urgency (emergency or standard), budget_hint, confidence_score (a number between 0 and 1), and notes (a short string). If a value is not mentioned in the message, use null instead of guessing. Only mark urgency as emergency if the message implies a safety risk or an immediate need, such as no heat in freezing weather or an active water leak. Otherwise mark it standard.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Customer name: {{ $('Webhook - Intake Form').item.json.body.name }}\\nPhone Number: {{ $('Webhook - Intake Form').item.json.body.phone }}\\nEmail: {{ $('Webhook - Intake Form').item.json.body.email }}\\nMessage: {{ $('Webhook - Intake Form').item.json.body.message }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -7392,
+        -720
+      ],
+      "id": "013478d5-521a-4f5b-b84c-d9bd8f5800a1",
+      "name": "Extract Lead Data",
+      "credentials": {
+        "openAiApi": {
+          "id": "uVgbS6GgB5Chsl3S",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.choices[0].message.content;\nconst extracted = JSON.parse(raw);\n\nreturn {\n  json: {\n    ...$('Build Idempotency Key').item.json,\n    extracted\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -7168,
+        -704
+      ],
+      "id": "8f78f5c4-e649-4d37-831b-8829a8cb454f",
+      "name": "Parse Extracted Data"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "leads",
+          "mode": "list",
+          "cachedResultName": "leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_score": 0,
+            "external_source": "={{ $('Build Idempotency Key').item.json.source }}",
+            "external_ref_id": "={{ $('Build Idempotency Key').item.json.idempotency_key }}",
+            "first_name": "={{ $json.extracted.first_name }}",
+            "last_name": "={{ $json.extracted.last_name }}",
+            "phone_number": "={{ $json.extracted.phone_number }}",
+            "service_type": "={{ $json.extracted.service_type }}",
+            "property_type": "={{ $json.extracted.property_type }}",
+            "zip_code": "={{ $json.extracted.zip_code }}",
+            "city": "={{ $json.extracted.city }}",
+            "state": "={{ $json.extracted.state }}",
+            "raw_payload": "={{ JSON.stringify($('Webhook - Intake Form').item.json.body) }}",
+            "extracted_data": "={{ JSON.stringify($json.extracted) }}",
+            "email": "={{ $('Webhook - Intake Form').item.json.body.email }}",
+            "timezone": "={{ $json.timezone }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "external_source",
+              "displayName": "external_source",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "external_ref_id",
+              "displayName": "external_ref_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "first_name",
+              "displayName": "first_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_name",
+              "displayName": "last_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "phone_number",
+              "displayName": "phone_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "service_type",
+              "displayName": "service_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "property_type",
+              "displayName": "property_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "zip_code",
+              "displayName": "zip_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "city",
+              "displayName": "city",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "state",
+              "displayName": "state",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "timezone",
+              "displayName": "timezone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "raw_payload",
+              "displayName": "raw_payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "extracted_data",
+              "displayName": "extracted_data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "lead_score",
+              "displayName": "lead_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "lead_status",
+              "displayName": "lead_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "new",
+                  "value": "new"
+                },
+                {
+                  "name": "qualifying",
+                  "value": "qualifying"
+                },
+                {
+                  "name": "disqualified",
+                  "value": "disqualified"
+                },
+                {
+                  "name": "quoted",
+                  "value": "quoted"
+                },
+                {
+                  "name": "booked",
+                  "value": "booked"
+                },
+                {
+                  "name": "in_progress",
+                  "value": "in_progress"
+                },
+                {
+                  "name": "won",
+                  "value": "won"
+                },
+                {
+                  "name": "lost",
+                  "value": "lost"
+                },
+                {
+                  "name": "duplicate",
+                  "value": "duplicate"
+                }
+              ]
+            },
+            {
+              "id": "assigned_rep",
+              "displayName": "assigned_rep",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -6720,
+        -720
+      ],
+      "id": "eee6d857-4655-4e2b-ab8f-fcf7c71b2a86",
+      "name": "Insert Lead",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select * from pricing_rules\nwhere service_type ilike '{{ $('Insert Lead').item.json.service_type }}'\nand region_code = '{{ $('Insert Lead').item.json.extracted_data.state }}'\nand is_active = true\nand effective_from <= now()\nand (effective_to is null or effective_to > now())\norder by effective_from desc\nlimit 1;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -6288,
+        -720
+      ],
+      "id": "bf0fd281-3a69-40b8-8c9e-75993c1e49a4",
+      "name": "Lookup Pricing Rule",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "caf9b7e3-41ba-438d-84ce-9344ed8bff93",
+              "leftValue": "={{ Object.keys($input.first().json).length === 0 ? 0 : $input.all().length }}\n",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -7312,
+        -256
+      ],
+      "id": "b0b1f9f0-6a39-40ff-b6db-0ee1e2a67d73",
+      "name": "IF - Pricing Not Found"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "lead_events",
+          "mode": "list",
+          "cachedResultName": "lead_events"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $('Insert Lead').item.json.lead_id }}",
+            "event_type": "pricing_not_found",
+            "event_payload": "={{ JSON.stringify($('Insert Lead').item.json) }}",
+            "actor": "system"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "event_id",
+              "displayName": "event_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_type",
+              "displayName": "event_type",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_payload",
+              "displayName": "event_payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -7056,
+        -416
+      ],
+      "id": "fc9ca54c-19f5-4c58-9c5c-b5cf92495568",
+      "name": "Log Pricing Not Found",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b90b0706-b4d4-46d2-ba81-938062eeb0bc",
+              "leftValue": "={{ $('Parse Extracted Data').item.json.extracted.urgency }}",
+              "rightValue": "emergency",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "b048690b-95ab-47a0-b2eb-ed1112b3eeb3",
+              "leftValue": "={{ $json.base_price.toNumber() }}",
+              "rightValue": 1000,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            },
+            {
+              "id": "e9336b48-6966-490f-a062-cc9fc46379a2",
+              "leftValue": "={{ $('Parse Extracted Data').item.json.extracted.confidence_score }}",
+              "rightValue": 0.7,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -7056,
+        -224
+      ],
+      "id": "3da5edcf-9d9d-4996-88da-5c4d30deba80",
+      "name": "IF - Needs Human Approval"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BPR77PF24",
+          "mode": "list",
+          "cachedResultName": "lead-approvals"
+        },
+        "message": "=🔔 New lead needs approval\n\nName: {{ $('Insert Lead').item.json.first_name }} {{ $('Insert Lead').item.json.last_name }}\nPhone: {{ $('Insert Lead').item.json.phone_number }}\nService: {{ $('Parse Extracted Data').item.json.extracted.service_type }}\nZip: {{ $('Parse Extracted Data').item.json.extracted.zip_code }}\nUrgency: {{ $('Parse Extracted Data').item.json.extracted.urgency }}\nAI Confidence: {{ $('Parse Extracted Data').item.json.extracted.confidence_score }}\nSuggested Price: ${{ $('Lookup Pricing Rule').item.json.base_price }}\n\nCustomer said: {{ $('Webhook - Intake Form').item.json.body.message }}",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double"
+          }
+        },
+        "options": {
+          "limitWaitTime": {
+            "values": {
+              "resumeAmount": 24
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        -6832,
+        -320
+      ],
+      "id": "426aa03f-558d-4118-8804-028e7d6ee56a",
+      "name": "Send Approval Request",
+      "webhookId": "c7e239da-c822-47c9-ac8b-e1b85480c122",
+      "credentials": {
+        "slackApi": {
+          "id": "p9niWePS1zRlJ5no",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2a61fc2c-8ae9-48b3-81a4-60a91118b7ff",
+              "leftValue": "={{ $json.data.approved }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -6608,
+        -320
+      ],
+      "id": "987e57f3-6f36-48e4-9636-bbff437f5071",
+      "name": "IF - Was Approved"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "leads",
+          "mode": "list",
+          "cachedResultName": "leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_score": 0,
+            "lead_id": "={{ $('Insert Lead').item.json.lead_id }}",
+            "lead_status": "quoted"
+          },
+          "matchingColumns": [
+            "lead_id"
+          ],
+          "schema": [
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "external_source",
+              "displayName": "external_source",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "external_ref_id",
+              "displayName": "external_ref_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "first_name",
+              "displayName": "first_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_name",
+              "displayName": "last_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "phone_number",
+              "displayName": "phone_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "service_type",
+              "displayName": "service_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "property_type",
+              "displayName": "property_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "zip_code",
+              "displayName": "zip_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "city",
+              "displayName": "city",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "state",
+              "displayName": "state",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "timezone",
+              "displayName": "timezone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "raw_payload",
+              "displayName": "raw_payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "extracted_data",
+              "displayName": "extracted_data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "lead_score",
+              "displayName": "lead_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "lead_status",
+              "displayName": "lead_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "new",
+                  "value": "new"
+                },
+                {
+                  "name": "qualifying",
+                  "value": "qualifying"
+                },
+                {
+                  "name": "disqualified",
+                  "value": "disqualified"
+                },
+                {
+                  "name": "quoted",
+                  "value": "quoted"
+                },
+                {
+                  "name": "booked",
+                  "value": "booked"
+                },
+                {
+                  "name": "in_progress",
+                  "value": "in_progress"
+                },
+                {
+                  "name": "won",
+                  "value": "won"
+                },
+                {
+                  "name": "lost",
+                  "value": "lost"
+                },
+                {
+                  "name": "duplicate",
+                  "value": "duplicate"
+                }
+              ]
+            },
+            {
+              "id": "assigned_rep",
+              "displayName": "assigned_rep",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -6416,
+        -432
+      ],
+      "id": "0c19a0cf-b394-4d91-b636-ebb9255b6563",
+      "name": "Update Lead - Quoted",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "lead_events",
+          "mode": "list",
+          "cachedResultName": "lead_events"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $('Insert Lead').item.json.lead_id }}",
+            "event_type": "approved",
+            "event_payload": "={{ JSON.stringify($('IF - Was Approved').item.json.data) }}",
+            "actor": "slack_manager"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "event_id",
+              "displayName": "event_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_type",
+              "displayName": "event_type",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_payload",
+              "displayName": "event_payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -6192,
+        -432
+      ],
+      "id": "4ba10a16-213b-44c1-b422-5c992a7ffa09",
+      "name": "Log Approval Events",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "leads",
+          "mode": "list",
+          "cachedResultName": "leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_score": 0,
+            "lead_id": "={{ $('Insert Lead').item.json.lead_id }}",
+            "lead_status": "disqualified"
+          },
+          "matchingColumns": [
+            "lead_id"
+          ],
+          "schema": [
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "external_source",
+              "displayName": "external_source",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "external_ref_id",
+              "displayName": "external_ref_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "first_name",
+              "displayName": "first_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_name",
+              "displayName": "last_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "phone_number",
+              "displayName": "phone_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "service_type",
+              "displayName": "service_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "property_type",
+              "displayName": "property_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "zip_code",
+              "displayName": "zip_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "city",
+              "displayName": "city",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "state",
+              "displayName": "state",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "timezone",
+              "displayName": "timezone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "raw_payload",
+              "displayName": "raw_payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "extracted_data",
+              "displayName": "extracted_data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "lead_score",
+              "displayName": "lead_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "lead_status",
+              "displayName": "lead_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "new",
+                  "value": "new"
+                },
+                {
+                  "name": "qualifying",
+                  "value": "qualifying"
+                },
+                {
+                  "name": "disqualified",
+                  "value": "disqualified"
+                },
+                {
+                  "name": "quoted",
+                  "value": "quoted"
+                },
+                {
+                  "name": "booked",
+                  "value": "booked"
+                },
+                {
+                  "name": "in_progress",
+                  "value": "in_progress"
+                },
+                {
+                  "name": "won",
+                  "value": "won"
+                },
+                {
+                  "name": "lost",
+                  "value": "lost"
+                },
+                {
+                  "name": "duplicate",
+                  "value": "duplicate"
+                }
+              ]
+            },
+            {
+              "id": "assigned_rep",
+              "displayName": "assigned_rep",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -6416,
+        -240
+      ],
+      "id": "e1d0b667-7f7c-49d4-a100-f36aa9f8c946",
+      "name": "Update Lead - Disqualified",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "lead_events",
+          "mode": "list",
+          "cachedResultName": "lead_events"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "event_id": 0,
+            "lead_id": "={{ $('Insert Lead').item.json.lead_id }}",
+            "event_type": "declined",
+            "event_payload": "={{ JSON.stringify($('IF - Was Approved').item.json.data) }}",
+            "actor": "slack_manager"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "event_id",
+              "displayName": "event_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_type",
+              "displayName": "event_type",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_payload",
+              "displayName": "event_payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -6192,
+        -240
+      ],
+      "id": "12894d8d-87cd-4487-9b9c-be89a4d24e06",
+      "name": "Log Decline Event",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "leads",
+          "mode": "list",
+          "cachedResultName": "leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_score": 0,
+            "lead_id": "={{ $('Insert Lead').item.json.lead_id }}",
+            "lead_status": "quoted"
+          },
+          "matchingColumns": [
+            "lead_id"
+          ],
+          "schema": [
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "external_source",
+              "displayName": "external_source",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "external_ref_id",
+              "displayName": "external_ref_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "first_name",
+              "displayName": "first_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_name",
+              "displayName": "last_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "phone_number",
+              "displayName": "phone_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "service_type",
+              "displayName": "service_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "property_type",
+              "displayName": "property_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "zip_code",
+              "displayName": "zip_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "city",
+              "displayName": "city",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "state",
+              "displayName": "state",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "timezone",
+              "displayName": "timezone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "raw_payload",
+              "displayName": "raw_payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "extracted_data",
+              "displayName": "extracted_data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "lead_score",
+              "displayName": "lead_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "lead_status",
+              "displayName": "lead_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "new",
+                  "value": "new"
+                },
+                {
+                  "name": "qualifying",
+                  "value": "qualifying"
+                },
+                {
+                  "name": "disqualified",
+                  "value": "disqualified"
+                },
+                {
+                  "name": "quoted",
+                  "value": "quoted"
+                },
+                {
+                  "name": "booked",
+                  "value": "booked"
+                },
+                {
+                  "name": "in_progress",
+                  "value": "in_progress"
+                },
+                {
+                  "name": "won",
+                  "value": "won"
+                },
+                {
+                  "name": "lost",
+                  "value": "lost"
+                },
+                {
+                  "name": "duplicate",
+                  "value": "duplicate"
+                }
+              ]
+            },
+            {
+              "id": "assigned_rep",
+              "displayName": "assigned_rep",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -6416,
+        -48
+      ],
+      "id": "d99d0015-2e10-4be6-bc90-7e4368efbbd9",
+      "name": "Update Lead - Auto Quoted",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "lead_events",
+          "mode": "list",
+          "cachedResultName": "lead_events"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $('Insert Lead').item.json.lead_id }}",
+            "event_type": "auto-quoted",
+            "event_payload": "={{ JSON.stringify({ price: $('Lookup Pricing Rule').item.json.base_price, service_type: $('Parse Extracted Data').item.json.extracted.service_type }) }}",
+            "actor": "system"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "event_id",
+              "displayName": "event_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_type",
+              "displayName": "event_type",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_payload",
+              "displayName": "event_payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -6192,
+        -48
+      ],
+      "id": "ae66aef5-a5a5-47a7-8bd6-cff5020748f9",
+      "name": "Log Auto Quote Event",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "email": "={{ $('Insert Lead').item.json.email }}",
+        "additionalFields": {
+          "firstName": "={{ $('Insert Lead').item.json.first_name }}",
+          "lastName": "={{ $('Insert Lead').item.json.last_name }}",
+          "phoneNumber": "={{ $('Insert Lead').item.json.phone_number }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        -5968,
+        -240
+      ],
+      "id": "e6f63068-efb0-4d47-a60b-37d2adb3540b",
+      "name": "Sync Contact to HubSpot",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "a2NRiJWhalflFYOE",
+          "name": "HubSpot Service Key account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "resource": "deal",
+        "stage": "=appointmentscheduled",
+        "additionalFields": {
+          "amount": "={{ $('Lookup Pricing Rule').item.json.base_price }}",
+          "associatedVids": [
+            842822984915
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        -5824,
+        -240
+      ],
+      "id": "d8435f1c-6abc-4633-9663-36c42ad0f2b5",
+      "name": "Create Deal",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "a2NRiJWhalflFYOE",
+          "name": "HubSpot Service Key account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "lead_events",
+          "mode": "list",
+          "cachedResultName": "lead_events"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $('Insert Lead').item.json.lead_id }}",
+            "event_type": "synced_to_hubspot",
+            "event_payload": "={{ JSON.stringify({ \"contact_id\": $('Sync Contact to HubSpot').item.json.vid, \"deal_id\": $json.dealId }) }}",
+            "actor": "system"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "event_id",
+              "displayName": "event_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_type",
+              "displayName": "event_type",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_payload",
+              "displayName": "event_payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -5680,
+        -240
+      ],
+      "id": "6d1ebd5d-4f76-4039-ad2e-ab11869e10ef",
+      "name": "Log HubSpot Sync",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const stateTimezones = {\n  'AL': 'America/Chicago', 'AK': 'America/Anchorage', 'AZ': 'America/Phoenix', 'AR': 'America/Chicago',\n  'CA': 'America/Los_Angeles', 'CO': 'America/Denver', 'CT': 'America/New_York', 'DE': 'America/New_York',\n  'FL': 'America/New_York', 'GA': 'America/New_York', 'HI': 'Pacific/Honolulu', 'ID': 'America/Denver',\n  'IL': 'America/Chicago', 'IN': 'America/Indiana/Indianapolis', 'IA': 'America/Chicago', 'KS': 'America/Chicago',\n  'KY': 'America/New_York', 'LA': 'America/Chicago', 'ME': 'America/New_York', 'MD': 'America/New_York',\n  'MA': 'America/New_York', 'MI': 'America/Detroit', 'MN': 'America/Chicago', 'MS': 'America/Chicago',\n  'MO': 'America/Chicago', 'MT': 'America/Denver', 'NE': 'America/Chicago', 'NV': 'America/Los_Angeles',\n  'NH': 'America/New_York', 'NJ': 'America/New_York', 'NM': 'America/Denver', 'NY': 'America/New_York',\n  'NC': 'America/New_York', 'ND': 'America/Chicago', 'OH': 'America/New_York', 'OK': 'America/Chicago',\n  'OR': 'America/Los_Angeles', 'PA': 'America/New_York', 'RI': 'America/New_York', 'SC': 'America/New_York',\n  'SD': 'America/Chicago', 'TN': 'America/Chicago', 'TX': 'America/Chicago', 'UT': 'America/Denver',\n  'VT': 'America/New_York', 'VA': 'America/New_York', 'WA': 'America/Los_Angeles', 'WV': 'America/New_York',\n  'WI': 'America/Chicago', 'WY': 'America/Denver', 'DC': 'America/New_York'\n};\n\nconst state = $input.item.json.extracted.state;\nconst timezone = stateTimezones[state] || null;\n\nreturn {\n  json: {\n    ...$input.item.json,\n    timezone\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -6944,
+        -720
+      ],
+      "id": "8c94bb9a-e255-4745-bd6b-7eda0a786176",
+      "name": "Determine Timezone"
+    },
+    {
+      "parameters": {
+        "jsCode": "const name = encodeURIComponent(`${$('Insert Lead').item.json.first_name} ${$('Insert Lead').item.json.last_name}`);\nconst email = encodeURIComponent($('Insert Lead').item.json.email);\nconst bookingLink = `https://calendly.com/steven-fakayode/hvac-service-consultation?name=${name}&email=${email}`;\n\nreturn {\n  json: {\n    ...$input.item.json,\n    bookingLink\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5520,
+        -240
+      ],
+      "id": "d8869aec-439d-4ddb-8019-de0c75474229",
+      "name": "Build Booking Link"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "lead_events",
+          "mode": "list",
+          "cachedResultName": "lead_events"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $('Insert Lead').item.json.lead_id }}",
+            "event_type": "booking_link_generated",
+            "actor": "system",
+            "event_payload": "={{ JSON.stringify({ link: $json.bookingLink }) }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "event_id",
+              "displayName": "event_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_type",
+              "displayName": "event_type",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_payload",
+              "displayName": "event_payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -5360,
+        -240
+      ],
+      "id": "19b425b5-c4de-4b6c-8fae-00a254f9aada",
+      "name": "Log Booking Link",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "bbe434e5-1d75-4f80-9ca5-d59763113487",
+              "leftValue": "={{ $('Log SMS Consent').item.json.consent_status }}",
+              "rightValue": "granted",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -5216,
+        -240
+      ],
+      "id": "00e8bf8b-ad72-4415-82a2-ca7ccdefaa00",
+      "name": "IF - Has SMS Consent"
+    },
+    {
+      "parameters": {
+        "jsCode": "const firstName = $('Insert Lead').item.json.first_name;\nconst serviceType = $('Parse Extracted Data').item.json.extracted.service_type;\nconst price = $('Lookup Pricing Rule').item.json.base_price;\nconst link = $('Build Booking Link').item.json.bookingLink;\n\nconst smsMessage = `Hi ${firstName}, thanks for reaching out! Your estimated price for ${serviceType} is $${price}. Book your appointment here: ${link} Reply STOP to opt out.`;\n\nreturn {\n  json: {\n    ...$input.item.json,\n    smsMessage\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5056,
+        -320
+      ],
+      "id": "d6892591-c2b9-4ee9-ad38-81d36b100c6a",
+      "name": "Build SMS Message"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "lead_events",
+          "mode": "list",
+          "cachedResultName": "lead_events"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $('Insert Lead').item.json.lead_id }}",
+            "event_type": "sms_simulated",
+            "event_payload": "={{ JSON.stringify({ to: $('Insert Lead').item.json.phone_number, message: $json.smsMessage }) }}",
+            "actor": "system"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "event_id",
+              "displayName": "event_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_type",
+              "displayName": "event_type",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_payload",
+              "displayName": "event_payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -4896,
+        -320
+      ],
+      "id": "4a5bd7ab-7769-43c8-8165-60338258f6b5",
+      "name": "Simulate Send SMS",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "lead_events",
+          "mode": "list",
+          "cachedResultName": "lead_events"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $('Insert Lead').item.json.lead_id }}",
+            "event_type": "sms_skipped_no_consent",
+            "actor": "system"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "event_id",
+              "displayName": "event_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_type",
+              "displayName": "event_type",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_payload",
+              "displayName": "event_payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -5008,
+        -144
+      ],
+      "id": "9f6eb677-3846-4057-802c-a76ba050d47d",
+      "name": "Log SMS Skipped",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "calendly-booking",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -7472,
+        368
+      ],
+      "id": "7307719a-d1c0-44dc-90d2-f2d3e994cb78",
+      "name": "Webhook - Calendar Booking",
+      "webhookId": "07706758-1884-4c6f-b5ad-2c879d819d47"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select * from leads\nwhere email = '{{ $json.body.payload.email }}'\norder by created_at desc\nlimit 1;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -7264,
+        368
+      ],
+      "id": "7f8d46f5-4dc4-45c7-a6c6-d25e54861227",
+      "name": "Find Lead By Email",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e4732d8a-9517-4a00-ad0b-e19b909695f1",
+              "leftValue": "={{ $input.all().filter(item => Object.keys(item.json).length > 0).length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -7056,
+        368
+      ],
+      "id": "dd9733d1-997a-472e-988f-62561a58b79e",
+      "name": "IF - Lead Found"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "leads",
+          "mode": "list",
+          "cachedResultName": "leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_status": "booked",
+            "lead_id": "={{ $json.lead_id }}"
+          },
+          "matchingColumns": [
+            "lead_id"
+          ],
+          "schema": [
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "external_source",
+              "displayName": "external_source",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "external_ref_id",
+              "displayName": "external_ref_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "first_name",
+              "displayName": "first_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "last_name",
+              "displayName": "last_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "phone_number",
+              "displayName": "phone_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "service_type",
+              "displayName": "service_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "property_type",
+              "displayName": "property_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "zip_code",
+              "displayName": "zip_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "city",
+              "displayName": "city",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "state",
+              "displayName": "state",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "timezone",
+              "displayName": "timezone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "raw_payload",
+              "displayName": "raw_payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "extracted_data",
+              "displayName": "extracted_data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_score",
+              "displayName": "lead_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_status",
+              "displayName": "lead_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "new",
+                  "value": "new"
+                },
+                {
+                  "name": "qualifying",
+                  "value": "qualifying"
+                },
+                {
+                  "name": "disqualified",
+                  "value": "disqualified"
+                },
+                {
+                  "name": "quoted",
+                  "value": "quoted"
+                },
+                {
+                  "name": "booked",
+                  "value": "booked"
+                },
+                {
+                  "name": "in_progress",
+                  "value": "in_progress"
+                },
+                {
+                  "name": "won",
+                  "value": "won"
+                },
+                {
+                  "name": "lost",
+                  "value": "lost"
+                },
+                {
+                  "name": "duplicate",
+                  "value": "duplicate"
+                }
+              ]
+            },
+            {
+              "id": "assigned_rep",
+              "displayName": "assigned_rep",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -6848,
+        272
+      ],
+      "id": "54b7ea2e-d7fa-43d8-9e45-2f6f8a191b79",
+      "name": "Update Lead - Booked",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "lead_events",
+          "mode": "list",
+          "cachedResultName": "lead_events"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "event_type": "booking_confirmed",
+            "actor": "customer",
+            "lead_id": "={{ $json.lead_id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "event_id",
+              "displayName": "event_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_type",
+              "displayName": "event_type",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_payload",
+              "displayName": "event_payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -6640,
+        272
+      ],
+      "id": "563d39c6-9354-4d52-bf8e-48cd98c6813b",
+      "name": "Log Booking Confirmed",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BPR77PF24",
+          "mode": "list",
+          "cachedResultName": "lead-approvals"
+        },
+        "text": "=⚠️ Booking confirmation received for an email we don't recognize: {{ $('Webhook - Calendar Booking').item.json.body.payload.email }}— needs manual review.",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        -6608,
+        496
+      ],
+      "id": "190668fa-bed3-4258-b5fc-166ffed24a1d",
+      "name": "Notify Unmatched Booking",
+      "webhookId": "b06d45be-54ef-4646-89da-cc72b3cfbda5",
+      "credentials": {
+        "slackApi": {
+          "id": "p9niWePS1zRlJ5no",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sms-reply",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -5616,
+        384
+      ],
+      "id": "c8b9945e-a8b5-4efc-9297-15c3db3be2f1",
+      "name": "Webhook - SMS Reply",
+      "webhookId": "72c0e77c-5902-4200-a51d-2c5ca66299a4"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "9631bb23-1285-465c-8e41-d0150ebc032a",
+              "leftValue": "={{ $input.all().filter(item => Object.keys(item.json).length > 0).length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -5200,
+        384
+      ],
+      "id": "f42503a6-6d94-43c9-b63c-a55020eb7377",
+      "name": "IF - Lead Found1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "update leads set lead_status = 'in_progress'\nwhere lead_id = '{{ $('Find Lead By Phone').item.json.lead_id }}'\nand lead_status = 'quoted';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -4992,
+        288
+      ],
+      "id": "1c9bbb1f-8b43-4696-9a61-273fd793664f",
+      "name": "Update Lead - Replied",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "lead_events",
+          "mode": "list",
+          "cachedResultName": "lead_events"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "event_type": "customer_replied",
+            "event_payload": "={{ JSON.stringify({ message: $('Webhook - SMS Reply').item.json.body.Body }) }}",
+            "actor": "customer",
+            "lead_id": "={{ $('Find Lead By Phone').item.json.lead_id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "event_id",
+              "displayName": "event_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_type",
+              "displayName": "event_type",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_payload",
+              "displayName": "event_payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -4784,
+        288
+      ],
+      "id": "8e27029c-7a34-4e0a-9e5d-91e4ab1ae4ce",
+      "name": "Log Customer Reply",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -4736,
+        -320
+      ],
+      "id": "57a34744-003f-4385-b51e-4e8abd139b7e",
+      "name": "Wait Before Reminder",
+      "webhookId": "66db83e6-fcf5-473d-9353-243b45205794"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select lead_status from leads where lead_id = '{{ $('Insert Lead').item.json.lead_id }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -4560,
+        -320
+      ],
+      "id": "84692d7a-f392-490b-89fb-8618abd09a63",
+      "name": "Recheck Lead Status",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "75ed24bf-3b1d-4f13-9aa0-d66d0f93b8be",
+              "leftValue": "={{ $json.lead_status }}",
+              "rightValue": "quoted",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -4352,
+        -320
+      ],
+      "id": "ff2a3d9e-0540-429a-9202-8b3fd375a350",
+      "name": "IF - Still Quoted"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BPR77PF24",
+          "mode": "list",
+          "cachedResultName": "lead-approvals"
+        },
+        "text": "=⚠️ Reply received from an unrecognized number: {{ $('Webhook - SMS Reply').item.json.body.From }}\nMessage: \"{{ $('Webhook - SMS Reply').item.json.body.Body }}\"",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        -4784,
+        512
+      ],
+      "id": "18d11990-2e91-4128-be53-c2467965bef0",
+      "name": "Notify Unmatched Reply",
+      "webhookId": "4080c199-d1bf-4cf6-997f-4ebfaa6229d1",
+      "credentials": {
+        "slackApi": {
+          "id": "p9niWePS1zRlJ5no",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const firstName = $('Insert Lead').item.json.first_name;\nconst serviceType = $('Parse Extracted Data').item.json.extracted.service_type;\nconst link = $('Build Booking Link').item.json.bookingLink;\n\nconst reminderMessage = `Hi ${firstName}, just following up on your ${serviceType} request! Ready to book? Grab a time here: ${link} Reply STOP to opt out.`;\n\nreturn {\n  json: {\n    ...$input.item.json,\n    reminderMessage\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4144,
+        -416
+      ],
+      "id": "a05e38c5-b60a-4e97-ba7f-23d1b69196ae",
+      "name": "Build Reminder Message"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "lead_events",
+          "mode": "list",
+          "cachedResultName": "lead_events"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $('Insert Lead').item.json.lead_id }}",
+            "event_type": "sms_reminder_sent",
+            "event_payload": "={{ JSON.stringify({ to: $('Insert Lead').item.json.phone_number, message: $json.reminderMessage }) }}",
+            "actor": "system"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "event_id",
+              "displayName": "event_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_type",
+              "displayName": "event_type",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_payload",
+              "displayName": "event_payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -3936,
+        -416
+      ],
+      "id": "1211a4ef-0ef7-45d4-b6ab-d4a18f63b8a4",
+      "name": "Simulate Send Reminder",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "lead_events",
+          "mode": "list",
+          "cachedResultName": "lead_events"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $('Insert Lead').item.json.lead_id }}",
+            "event_type": "reminder_skipped",
+            "event_payload": "={{ JSON.stringify({ reason: $json.lead_status }) }}",
+            "actor": "system"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "event_id",
+              "displayName": "event_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_type",
+              "displayName": "event_type",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_payload",
+              "displayName": "event_payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -4144,
+        -224
+      ],
+      "id": "36392970-c891-4a42-a224-80b1e9fabcba",
+      "name": "Log Reminder Skipped",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select * from leads\nwhere phone_number = '{{ $json.body.From }}'\norder by created_at desc\nlimit 1;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -5408,
+        384
+      ],
+      "id": "ba572c56-b704-4915-a61f-8dee4dc37e29",
+      "name": "Find Lead By Phone",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "consent_logs",
+          "mode": "list",
+          "cachedResultName": "consent_logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $json.lead_id }}",
+            "channel": "sms",
+            "consent_type": "service_updates",
+            "consent_status": "={{ $('Webhook - Intake Form').item.json.body.consent_sms ? 'granted' : 'pending' }}",
+            "consent_source": "web_form",
+            "consent_text_snapshot": "By providing your phone number, you agree to receive SMS updates about your service request. Message and data rates may apply. Reply STOP to opt out.",
+            "granted_at": "={{ $('Webhook - Intake Form').item.json.body.consent_sms ? $now : null }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "consent_id",
+              "displayName": "consent_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "sms",
+                  "value": "sms"
+                },
+                {
+                  "name": "whatsapp",
+                  "value": "whatsapp"
+                },
+                {
+                  "name": "email",
+                  "value": "email"
+                },
+                {
+                  "name": "voice",
+                  "value": "voice"
+                }
+              ]
+            },
+            {
+              "id": "consent_type",
+              "displayName": "consent_type",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "consent_status",
+              "displayName": "consent_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "granted",
+                  "value": "granted"
+                },
+                {
+                  "name": "revoked",
+                  "value": "revoked"
+                },
+                {
+                  "name": "pending",
+                  "value": "pending"
+                }
+              ]
+            },
+            {
+              "id": "consent_source",
+              "displayName": "consent_source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "consent_text_snapshot",
+              "displayName": "consent_text_snapshot",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ip_address",
+              "displayName": "ip_address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "user_agent",
+              "displayName": "user_agent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "granted_at",
+              "displayName": "granted_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "revoked_at",
+              "displayName": "revoked_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -6512,
+        -720
+      ],
+      "id": "90110a50-8ae6-4edd-ad75-0ded5a72ec58",
+      "name": "Log SMS Consent",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "exception_queue",
+          "mode": "list",
+          "cachedResultName": "exception_queue"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $('Insert Lead').item.json.lead_id }}",
+            "exception_type": "pricing_not_found",
+            "details": "={{ JSON.stringify($('Insert Lead').item.json) }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "exception_id",
+              "displayName": "exception_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "exception_type",
+              "displayName": "exception_type",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "details",
+              "displayName": "details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "resolved_at",
+              "displayName": "resolved_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -6864,
+        -464
+      ],
+      "id": "c3869897-4e9c-4c1e-8ba7-b48aeb5f13cf",
+      "name": "Queue Pricing Exception",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "exception_queue",
+          "mode": "list",
+          "cachedResultName": "exception_queue"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "exception_type": "unmatched_booking",
+            "details": "={{ JSON.stringify({ email: $('Webhook - Calendar Booking').item.json.body.payload.email }) }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "exception_id",
+              "displayName": "exception_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "exception_type",
+              "displayName": "exception_type",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "details",
+              "displayName": "details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "resolved_at",
+              "displayName": "resolved_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -6832,
+        496
+      ],
+      "id": "3df18e67-b9f4-445a-8c8c-c22b8c592266",
+      "name": "Queue Unmatched Booking Exception",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "exception_queue",
+          "mode": "list",
+          "cachedResultName": "exception_queue"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "exception_type": "unmatched_reply",
+            "details": "={{ JSON.stringify({ from: $('Webhook - SMS Reply').item.json.body.From, message: $('Webhook - SMS Reply').item.json.body.Body }) }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "exception_id",
+              "displayName": "exception_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "exception_type",
+              "displayName": "exception_type",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "details",
+              "displayName": "details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "resolved_at",
+              "displayName": "resolved_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -5008,
+        512
+      ],
+      "id": "8e0e45eb-40bf-4e36-94d2-c946731c89f3",
+      "name": "Queue Unmatched Reply Exception",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -6816,
+        -1264
+      ],
+      "id": "ad388e2a-f99d-46c4-bc38-9e6c64a69f50",
+      "name": "Schedule - Exception Check"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select *, round(extract(epoch from (now() - created_at))/60, 1) as minutes_open\nfrom exception_queue\nwhere status = 'open' and created_at < now() - interval '1 minute'\norder by created_at asc;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -6608,
+        -1264
+      ],
+      "id": "f3b62fa0-89fd-4712-94e5-6fcca59b0181",
+      "name": "Check Aging Exceptions",
+      "credentials": {
+        "postgres": {
+          "id": "JOkXXgFydWGaFjw7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4d59c360-f017-483e-acd8-6603814b2725",
+              "leftValue": "={{ $input.all().filter(item => Object.keys(item.json).length > 0).length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -6400,
+        -1264
+      ],
+      "id": "98cb00d4-06c4-4de3-9334-8d8cd6b6fb7d",
+      "name": "IF - Has Aging Exceptions"
+    },
+    {
+      "parameters": {
+        "jsCode": "const exceptions = $input.all().map(item => item.json);\n\nconst lines = exceptions.map(e =>\n  `• ${e.exception_type} (${e.minutes_open} min open) — lead_id: ${e.lead_id || 'none'}`\n);\n\n// We use a JavaScript template literal to preserve real line breaks\nreturn [\n  {\n    json: { \n      summary: `🚨 ${exceptions.length} exception(s) need attention:\n\n${lines.join('\\n')}` \n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -6192,
+        -1360
+      ],
+      "id": "b38d1289-e1fe-4668-8400-c95dd139f2be",
+      "name": "Build Alert Summary"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BPR77PF24",
+          "mode": "list",
+          "cachedResultName": "lead-approvals"
+        },
+        "text": "={{ $json.summary }}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        -5984,
+        -1360
+      ],
+      "id": "864f6cf5-7849-48ae-9320-398d072ebd26",
+      "name": "Alert - Aging Exceptions",
+      "webhookId": "a221c8d9-bdcf-4680-9874-11ab9e093b63",
+      "credentials": {
+        "slackApi": {
+          "id": "p9niWePS1zRlJ5no",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Intake Form": {
+      "main": [
+        [
+          {
+            "node": "Build Idempotency Key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Idempotency Key": {
+      "main": [
+        [
+          {
+            "node": "Check Idempotency Key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Idempotency Key": {
+      "main": [
+        [
+          {
+            "node": "IF - Is New Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Is New Event": {
+      "main": [
+        [
+          {
+            "node": "Insert Idempotency Key",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Duplicate Count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Idempotency Key": {
+      "main": [
+        [
+          {
+            "node": "Extract Lead Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Lead Data": {
+      "main": [
+        [
+          {
+            "node": "Parse Extracted Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Extracted Data": {
+      "main": [
+        [
+          {
+            "node": "Determine Timezone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Lead": {
+      "main": [
+        [
+          {
+            "node": "Log SMS Consent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup Pricing Rule": {
+      "main": [
+        [
+          {
+            "node": "IF - Pricing Not Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Pricing Not Found": {
+      "main": [
+        [
+          {
+            "node": "Log Pricing Not Found",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF - Needs Human Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Needs Human Approval": {
+      "main": [
+        [
+          {
+            "node": "Send Approval Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Lead - Auto Quoted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Approval Request": {
+      "main": [
+        [
+          {
+            "node": "IF - Was Approved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Was Approved": {
+      "main": [
+        [
+          {
+            "node": "Update Lead - Quoted",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Lead - Disqualified",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Lead - Quoted": {
+      "main": [
+        [
+          {
+            "node": "Log Approval Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Lead - Disqualified": {
+      "main": [
+        [
+          {
+            "node": "Log Decline Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Lead - Auto Quoted": {
+      "main": [
+        [
+          {
+            "node": "Log Auto Quote Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Approval Events": {
+      "main": [
+        [
+          {
+            "node": "Sync Contact to HubSpot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Auto Quote Event": {
+      "main": [
+        [
+          {
+            "node": "Sync Contact to HubSpot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync Contact to HubSpot": {
+      "main": [
+        [
+          {
+            "node": "Create Deal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Deal": {
+      "main": [
+        [
+          {
+            "node": "Log HubSpot Sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determine Timezone": {
+      "main": [
+        [
+          {
+            "node": "Insert Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log HubSpot Sync": {
+      "main": [
+        [
+          {
+            "node": "Build Booking Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Booking Link": {
+      "main": [
+        [
+          {
+            "node": "Log Booking Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Booking Link": {
+      "main": [
+        [
+          {
+            "node": "IF - Has SMS Consent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Has SMS Consent": {
+      "main": [
+        [
+          {
+            "node": "Build SMS Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log SMS Skipped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build SMS Message": {
+      "main": [
+        [
+          {
+            "node": "Simulate Send SMS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Calendar Booking": {
+      "main": [
+        [
+          {
+            "node": "Find Lead By Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Lead By Email": {
+      "main": [
+        [
+          {
+            "node": "IF - Lead Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Lead Found": {
+      "main": [
+        [
+          {
+            "node": "Update Lead - Booked",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Queue Unmatched Booking Exception",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Lead - Booked": {
+      "main": [
+        [
+          {
+            "node": "Log Booking Confirmed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - SMS Reply": {
+      "main": [
+        [
+          {
+            "node": "Find Lead By Phone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Lead Found1": {
+      "main": [
+        [
+          {
+            "node": "Update Lead - Replied",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Queue Unmatched Reply Exception",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Lead - Replied": {
+      "main": [
+        [
+          {
+            "node": "Log Customer Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simulate Send SMS": {
+      "main": [
+        [
+          {
+            "node": "Wait Before Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Before Reminder": {
+      "main": [
+        [
+          {
+            "node": "Recheck Lead Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recheck Lead Status": {
+      "main": [
+        [
+          {
+            "node": "IF - Still Quoted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Still Quoted": {
+      "main": [
+        [
+          {
+            "node": "Build Reminder Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Reminder Skipped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Reminder Message": {
+      "main": [
+        [
+          {
+            "node": "Simulate Send Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Lead By Phone": {
+      "main": [
+        [
+          {
+            "node": "IF - Lead Found1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log SMS Consent": {
+      "main": [
+        [
+          {
+            "node": "Lookup Pricing Rule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Pricing Not Found": {
+      "main": [
+        [
+          {
+            "node": "Queue Pricing Exception",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue Unmatched Booking Exception": {
+      "main": [
+        [
+          {
+            "node": "Notify Unmatched Booking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue Unmatched Reply Exception": {
+      "main": [
+        [
+          {
+            "node": "Notify Unmatched Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule - Exception Check": {
+      "main": [
+        [
+          {
+            "node": "Check Aging Exceptions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Aging Exceptions": {
+      "main": [
+        [
+          {
+            "node": "IF - Has Aging Exceptions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Has Aging Exceptions": {
+      "main": [
+        [
+          {
+            "node": "Build Alert Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Alert Summary": {
+      "main": [
+        [
+          {
+            "node": "Alert - Aging Exceptions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "eaea1766-f0dc-42cd-9ff1-4b7bd5d9fa58",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f94b5c0a9a0b4d6bf0ce994c5786515525a7ccdf1eeefc29a152c27202100573"
+  },
+  "nodeGroups": [],
+  "id": "dQXakXzuyhDprPuo",
+  "tags": []
+}
