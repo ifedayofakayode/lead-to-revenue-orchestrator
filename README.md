@@ -17,21 +17,33 @@ This project automates lead handling for HVAC/roofing-style service businesses t
 
 ## Architecture
 
-\`\`\`mermaid
+```mermaid
 flowchart TD
-    A[Webhook: Intake Form] --> B[Duplicate Check - Idempotency]
-    B --> C[OpenAI: Extract Lead Data]
-    C --> D[Pricing Lookup]
-    D --> E{Needs Human Approval?}
-    E -->|Yes| F[Slack: Send and Wait for Approval]
-    E -->|No| G[Auto-Quote]
-    F --> H[HubSpot: Sync Contact and Deal]
+    A[🌐 Webhook: Intake Form] --> B[🔍 Duplicate Check - Idempotency]
+    B --> C[🤖 OpenAI: Extract Lead Data]
+    C --> D[💰 Pricing Lookup]
+    D --> E{⚠️ Needs Human Approval?}
+    E -->|Yes, High Value| F[💬 Slack: Send & Wait for Approval]
+    E -->|No, Auto-Approve| G[⚡ Auto-Quote]
+    F --> H[🔄 HubSpot: Sync Contact & Deal]
     G --> H
-    H --> I[Generate Calendly Booking Link]
-    I --> J{SMS Consent Granted?}
-    J -->|Yes| K[Simulated SMS + Reminder Loop]
-    J -->|No| L[Log Skipped]
-\`\`\`
+    H --> I[📅 Generate Calendly Booking Link]
+    I --> J{📱 SMS Consent Granted?}
+    J -->|Yes| K[💬 SMS + Reminder Loop]
+    J -->|No| L[📝 Log Skipped]
+
+    classDef intake fill:#3B82F6,stroke:#1E40AF,color:#fff,stroke-width:2px
+    classDef ai fill:#8B5CF6,stroke:#6D28D9,color:#fff,stroke-width:2px
+    classDef logic fill:#F59E0B,stroke:#B45309,color:#fff,stroke-width:2px
+    classDef action fill:#10B981,stroke:#047857,color:#fff,stroke-width:2px
+    classDef endNode fill:#6B7280,stroke:#374151,color:#fff,stroke-width:2px
+
+    class A intake
+    class B,C,D ai
+    class E,J logic
+    class F,G,H,I,K action
+    class L endNode
+```
 
 ## Tech Stack
 
@@ -70,11 +82,11 @@ flowchart TD
 
 ## Project Structure
 
-\`\`\`
+```
 workflows/    exported n8n workflow JSON files
 database/     PostgreSQL schema and analytics views
 docs/         architecture notes
-\`\`\`
+```
 
 ## Status / Roadmap
 
