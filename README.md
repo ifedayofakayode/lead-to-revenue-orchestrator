@@ -41,8 +41,9 @@ flowchart TD
     B -->|duplicate| B2[Increment duplicate_count]
     B -->|new| C[OpenAI: Extract Lead Data]
     C --> D[(PostgreSQL: Source of Truth)]
-    D --> E{Score & Route}
+    D --> E{Score and Route}
     E -->|Emergency| F[Slack Alert]
+    F --> H
     E -->|Low priority| G[Nurture Sequence]
     E -->|Standard| H[Pricing Lookup]
     H --> I{Stale price?}
@@ -50,7 +51,8 @@ flowchart TD
     I -->|No| J{Needs Human Approval?}
     J -->|Yes| K[Slack: Send and Wait]
     J -->|No| L[Auto-Quote]
-    K --> M[HubSpot Sync]
+    K -->|Approved| M[HubSpot Sync]
+    K -->|Rejected| X
     L --> M
     M --> N[Calendly Link]
     N --> O{SMS Consent?}
@@ -58,17 +60,19 @@ flowchart TD
     O -->|No| Q[Log Skipped]
     D --> R[Metabase Dashboard]
 
-    classDef intake fill:#3B82F6,stroke:#1E40AF,color:#fff,stroke-width:2px
-    classDef ai fill:#8B5CF6,stroke:#6D28D9,color:#fff,stroke-width:2px
-    classDef logic fill:#F59E0B,stroke:#B45309,color:#fff,stroke-width:2px
-    classDef action fill:#10B981,stroke:#047857,color:#fff,stroke-width:2px
-    classDef endNode fill:#6B7280,stroke:#374151,color:#fff,stroke-width:2px
+    classDef intake fill:#3B82F6,stroke:#1E40AF,color:#fff
+    classDef ai fill:#8B5CF6,stroke:#6D28D9,color:#fff
+    classDef data fill:#0EA5E9,stroke:#0369A1,color:#fff
+    classDef logic fill:#F59E0B,stroke:#B45309,color:#fff
+    classDef action fill:#10B981,stroke:#047857,color:#fff
+    classDef problem fill:#EF4444,stroke:#B91C1C,color:#fff
 
     class A intake
-    class B,C,D ai
-    class E,J logic
-    class F,G,H,I,K action
-    class L endNode
+    class C ai
+    class D,R data
+    class B,E,I,J,O logic
+    class F,G,H,K,L,M,N,P action
+    class B2,X,Q problem
 ```
 
 
@@ -95,15 +99,14 @@ flowchart TD
 1. Run `database/schema.sql` in your Supabase SQL editor.
 2. Import each file in `workflows/` into n8n (Workflows → Import from file).
 3. Create credentials in n8n for each service (see list below).
-4. Copy `.env.example` to `.env` and fill in your values.
-5. Send a test lead:
+4. Send a test lead:
 ```bash
    curl -X POST YOUR_WEBHOOK_URL \
      -H "Content-Type: application/json" \
      -d '{"name":"Test","email":"test@example.com","message":"My AC is broken"}'
 ```
 
-**Credentials needed:** OpenAI API key, HubSpot private app token,
+**Credentials needed:** OpenAI API key, Calendly, HubSpot private app token,
 Slack app (interactivity enabled), Supabase connection string.
 
 ## Example
@@ -147,9 +150,8 @@ Slack app (interactivity enabled), Supabase connection string.
 - **Nothing fails silently** — unmatched bookings, unmatched replies, and
   pricing gaps all land in a dedicated exception queue with scheduled Slack
   alerts, rather than disappearing.
-- **Postgres as source of truth, HubSpot as a projection**
-  *Why:* CRM outages shouldn't block customer replies.
-  *Result:* HubSpot downtime delays syncing but never delays a response.
+- **Postgres as source of truth, HubSpot as a projection** - CRM outages shouldn't block customer replies.
+  HubSpot downtime delays syncing but never delays a response.
   
 
 ## Project Structure
@@ -178,8 +180,6 @@ Slack approvals, HubSpot sync, consent logging, exception queue, Metabase analyt
 - [ ] UI for resolving exception-queue items
 - [ ] Live SMS via Twilio
 - [ ] Real Calendly webhook
-
-## About
 
 ## About the Author
 
