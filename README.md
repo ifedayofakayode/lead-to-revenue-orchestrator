@@ -1,6 +1,24 @@
 # Lead-to-Revenue Orchestrator
 
-An end-to-end, production-grade automation system that takes a lead from first contact to a booked, priced, CRM-synced opportunity. This is done with no manual data entry and no dropped leads. It is built for high-ticket home service businesses (HVAC, roofing, and similar trades).
+> Turns a raw web-form enquiry into a scored, priced, human-approved, CRM-synced
+> booking, automatically, with an audit trail for every decision.
+
+**Built for:** high-ticket home service businesses (HVAC, roofing).
+
+**Stack:** n8n · PostgreSQL (Supabase) · OpenAI · HubSpot · Slack · Calendly · Twilio · Metabase
+
+## The Problem
+Home service businesses lose jobs when leads sit unanswered. A customer with a
+broken AC calls three companies and hires whoever replies first. Manual data
+entry, slow quoting, and missed follow-ups cost real revenue.
+
+## The Solution
+This system replies, qualifies, prices, and books automatically, and pulls a
+human in only where risk is high (emergencies, large quotes, uncertain AI output).
+
+[▶ Watch the 5-minute walkthrough](https://www.loom.com/share/7eca89be55714ab18f51914f88bc37fa)
+
+![Workflow Picture](docs/workflow-screebshot.png)
 
 ## Overview
 
@@ -9,7 +27,7 @@ This project automates lead handling for HVAC/roofing-style service businesses t
 - **Extracts structured data from unstructured text** using OpenAI API (urgency, service type, budget signals, property details) via JSON-mode prompting
 - **Scores and routes leads deterministically** — emergency jobs trigger immediate Slack alerts; low-priority leads enter automated nurture sequences
 - **Generates dynamic preliminary pricing** from a rules-based pricing engine, with a stale-price guardrail that blocks quotes if pricing data hasn't been verified recently
-- **Checks calendar availability and books appointments** with correct timezone handling between business and customer locations
+- **Generates a Calendly booking link and handles booking confirmations** with correct timezone handling between business and customer locations
 - **Syncs to CRM (HubSpot)** as a downstream projection of a Postgres source of truth and not the other way around, so CRM downtime never blocks a customer response
 - **Routes high-value quotes through human-in-the-loop approval** via interactive Slack buttons before anything reaches the customer
 - **Runs compliant automated follow-up** with exact-match STOP/opt-out detection (TCPA-aware) and per-channel consent tracking
@@ -19,18 +37,26 @@ This project automates lead handling for HVAC/roofing-style service businesses t
 
 ```mermaid
 flowchart TD
-    A[🌐 Webhook: Intake Form] --> B[🔍 Duplicate Check - Idempotency]
-    B --> C[🤖 OpenAI: Extract Lead Data]
-    C --> D[💰 Pricing Lookup]
-    D --> E{⚠️ Needs Human Approval?}
-    E -->|Yes, High Value| F[💬 Slack: Send & Wait for Approval]
-    E -->|No, Auto-Approve| G[⚡ Auto-Quote]
-    F --> H[🔄 HubSpot: Sync Contact & Deal]
-    G --> H
-    H --> I[📅 Generate Calendly Booking Link]
-    I --> J{📱 SMS Consent Granted?}
-    J -->|Yes| K[💬 SMS + Reminder Loop]
-    J -->|No| L[📝 Log Skipped]
+    A[Webhook: Intake Form] --> B[Idempotency Check]
+    B -->|duplicate| B2[Increment duplicate_count]
+    B -->|new| C[OpenAI: Extract Lead Data]
+    C --> D[(PostgreSQL: Source of Truth)]
+    D --> E{Score & Route}
+    E -->|Emergency| F[Slack Alert]
+    E -->|Low priority| G[Nurture Sequence]
+    E -->|Standard| H[Pricing Lookup]
+    H --> I{Stale price?}
+    I -->|Yes| X[Exception Queue + Slack Alert]
+    I -->|No| J{Needs Human Approval?}
+    J -->|Yes| K[Slack: Send and Wait]
+    J -->|No| L[Auto-Quote]
+    K --> M[HubSpot Sync]
+    L --> M
+    M --> N[Calendly Link]
+    N --> O{SMS Consent?}
+    O -->|Yes| P[Simulated SMS + Reminders]
+    O -->|No| Q[Log Skipped]
+    D --> R[Metabase Dashboard]
 
     classDef intake fill:#3B82F6,stroke:#1E40AF,color:#fff,stroke-width:2px
     classDef ai fill:#8B5CF6,stroke:#6D28D9,color:#fff,stroke-width:2px
@@ -45,6 +71,7 @@ flowchart TD
     class L endNode
 ```
 
+
 ## Tech Stack
 
 | Layer | Tool |
@@ -56,6 +83,47 @@ flowchart TD
 | Messaging | Twilio (SMS) |
 | Human Approval | Slack |
 | Scheduling | Calendly |
+
+## Getting Started
+
+**Prerequisites**
+- n8n (self-hosted or cloud)
+- Supabase project (PostgreSQL)
+- Accounts/API keys: OpenAI, HubSpot, Slack, Calendly
+
+**Setup**
+1. Run `database/schema.sql` in your Supabase SQL editor.
+2. Import each file in `workflows/` into n8n (Workflows → Import from file).
+3. Create credentials in n8n for each service (see list below).
+4. Copy `.env.example` to `.env` and fill in your values.
+5. Send a test lead:
+```bash
+   curl -X POST YOUR_WEBHOOK_URL \
+     -H "Content-Type: application/json" \
+     -d '{"name":"Test","email":"test@example.com","message":"My AC is broken"}'
+```
+
+**Credentials needed:** OpenAI API key, HubSpot private app token,
+Slack app (interactivity enabled), Supabase connection string.
+
+## Example
+
+**Incoming form text:**
+> "My AC died last night and it's 38°C in the house. Have a baby at home.
+> Need someone ASAP. Budget isn't an issue."
+
+**Extracted by OpenAI:**
+```json
+{
+  "service_type": "AC repair",
+  "urgency": "emergency",
+  "budget_signal": "flexible",
+  "property_type": null,
+  "confidence": 0.91
+}
+```
+
+**Result:** Routed as emergency → instant Slack alert → quote sent for approval.
 
 ## Key Engineering Decisions
 
@@ -79,24 +147,47 @@ flowchart TD
 - **Nothing fails silently** — unmatched bookings, unmatched replies, and
   pricing gaps all land in a dedicated exception queue with scheduled Slack
   alerts, rather than disappearing.
+- **Postgres as source of truth, HubSpot as a projection**
+  *Why:* CRM outages shouldn't block customer replies.
+  *Result:* HubSpot downtime delays syncing but never delays a response.
+  
 
 ## Project Structure
 
 ```
-workflows/    exported n8n workflow JSON files
-database/     PostgreSQL schema and analytics views
-docs/         architecture notes
+workflows/
+  Lead-to-Revenue Orchestrator.json
+database/
+  schema.sql
+  views.sql
+docs/
+  architecture.md
+  workflow-screenshot.png
 ```
 
-## Status / Roadmap
+## Status & Roadmap
 
-This is a portfolio build demonstrating production-style patterns. Current
-limitations, by design, for this stage of the project:
-- SMS sending is simulated pending Twilio A2P 10DLC registration
-- Calendly booking confirmations use a stand-in webhook pending a paid
-  Calendly plan
-- No UI yet exists for resolving items in the exception queue
+**Working today:** intake, AI extraction, scoring/routing, pricing with guardrail,
+Slack approvals, HubSpot sync, consent logging, exception queue, Metabase analytics.
+
+**Intentionally simulated (and why):**
+- SMS sending, pending Twilio A2P 10DLC registration. The send step is isolated, so going live is a one-node swap.
+- Calendly confirmations use a stand-in webhook (real webhooks need a paid plan).
+
+**Next:**
+- [ ] UI for resolving exception-queue items
+- [ ] Live SMS via Twilio
+- [ ] Real Calendly webhook
 
 ## About
 
-I'm an AI Automation Engineer based in Lagos, Nigeria, who helps service businesses automate lead-to-revenue workflows, from enquiry capture and qualification to CRM management, appointment booking, quoting, follow-up, and conversion tracking. Open to remote AI automation engineering roles and consulting work. Reach out at steven.fakayode@gmail.com.
+## About the Author
+
+**Ifedayo Steven Fakayode**, AI Automation Engineer based in Lagos, Nigeria.
+
+I build automation systems that connect enquiry capture, qualification, CRM,
+booking, quoting, and follow-up for service businesses.
+
+Open to remote AI automation roles and consulting.
+
+📧 steven.fakayode@gmail.com · 💼 [LinkedIn](https://www.linkedin.com/in/ifedayofakayode/)
